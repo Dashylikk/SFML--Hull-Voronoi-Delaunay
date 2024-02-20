@@ -35,4 +35,9 @@
   <ItemGroup>
     <Text Include="points.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Button.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
