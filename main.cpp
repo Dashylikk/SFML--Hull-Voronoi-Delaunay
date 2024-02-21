@@ -6,7 +6,6 @@
 #include <functional>
 #include <random>
 
-// Struct and functions for convex hull construction
 struct Point {
     double x, y;
 };
@@ -60,16 +59,19 @@ public:
     sf::Sprite* getSprite();
     sf::Text* getText();
     void setAction(std::function<void()> action);
-    void toggleVisibility(); // New method to toggle visibility
-    bool isVisible(); // New method to check visibility
+    void draw(sf::RenderWindow& window);
+    void addButton(Button* button);
+    void setParent(Button* parent);
+    void closeSubmenu();
 private:
     sf::Sprite normalSprite;
     sf::Sprite clickedSprite;
     sf::Sprite* currentSprite;
     sf::Text buttonText;
     bool currentState;
-    bool visible; // New member to track visibility
     std::function<void()> buttonAction;
+    std::vector<Button*> subButtons;
+    Button* parentButton;
 };
 
 Button::Button(sf::Texture* normal, sf::Texture* clicked, std::string text, sf::Vector2f location) {
@@ -77,34 +79,36 @@ Button::Button(sf::Texture* normal, sf::Texture* clicked, std::string text, sf::
     clickedSprite.setTexture(*clicked);
     currentSprite = &normalSprite;
     currentState = false;
-    visible = true; // Initially visible
 
-    // Set button text properties
     buttonText.setString(text);
     buttonText.setCharacterSize(18);
     buttonText.setFillColor(sf::Color::Black);
     buttonText.setPosition(location.x + (normalSprite.getLocalBounds().width - buttonText.getLocalBounds().width) / 2, location.y + (normalSprite.getLocalBounds().height - buttonText.getLocalBounds().height) / 2);
 
-    // Set button positions
     normalSprite.setPosition(location);
     clickedSprite.setPosition(location);
 
-    // Set button size (smaller)
     sf::Vector2f newSize(100, 40);
     normalSprite.setScale(newSize.x / normalSprite.getLocalBounds().width, newSize.y / normalSprite.getLocalBounds().height);
     clickedSprite.setScale(newSize.x / clickedSprite.getLocalBounds().width, newSize.y / clickedSprite.getLocalBounds().height);
 
     buttonAction = nullptr;
+    parentButton = nullptr;
 }
 
 void Button::checkClick(sf::Vector2f mousePos) {
-    if (normalSprite.getGlobalBounds().contains(mousePos)) {
+    if (currentSprite->getGlobalBounds().contains(mousePos)) {
         currentState = !currentState;
         currentSprite = currentState ? &clickedSprite : &normalSprite;
 
-        // Call button action if it's set
         if (buttonAction) {
             buttonAction();
+        }
+    }
+
+    if (currentState) {
+        for (Button* button : subButtons) {
+            button->checkClick(mousePos);
         }
     }
 }
@@ -129,15 +133,32 @@ sf::Text* Button::getText() {
 void Button::setAction(std::function<void()> action) {
     buttonAction = action;
 }
+void Button::draw(sf::RenderWindow& window) {
+    window.draw(*currentSprite);
+    window.draw(buttonText);
 
-void Button::toggleVisibility() {
-    visible = !visible; // Toggle visibility
+    if (currentState) {
+        for (Button* button : subButtons) {
+            button->draw(window);
+        }
+    }
+}
+void Button::addButton(Button* button) {
+    button->setParent(this);
+    subButtons.push_back(button);
 }
 
-bool Button::isVisible() {
-    return visible;
+void Button::setParent(Button* parent) {
+    parentButton = parent;
 }
 
+void Button::closeSubmenu() {
+    currentState = false;
+    currentSprite = &normalSprite;
+    for (Button* button : subButtons) {
+        button->closeSubmenu();
+    }
+}
 
 // Function to build convex hull
 void buildConvexHull(std::vector<Point>& convexHullPoints, std::vector<Point>& points, sf::RenderWindow& window) {
@@ -187,29 +208,70 @@ std::vector<Point> points;
 std::vector<Point> convexHullPoints; 
 
 int main() {
+    sf::RenderWindow window(sf::VideoMode(2000, 1200), "Lab-1");
 
-    sf::RenderWindow window(sf::VideoMode(1200, 1200), "Convex Hull Visualization");
-    window.setFramerateLimit(60);
-
-    // Create button for building convex hull
     sf::Texture normalTexture, clickedTexture;
     if (!normalTexture.loadFromFile("normal_button.png") || !clickedTexture.loadFromFile("clicked_button.png")) {
         std::cerr << "Failed to load button textures." << std::endl;
         return 1;
     }
 
-    Button button1(&normalTexture, &clickedTexture, "Read Points and Build Convex Hull", sf::Vector2f(50, 1100));
-    Button button2(&normalTexture, &clickedTexture, "Button 2", sf::Vector2f(200, 1100));
-    Button button3(&normalTexture, &clickedTexture, "Generate Random Points", sf::Vector2f(350, 1100));
+    Button mainButton1(&normalTexture, &clickedTexture, "Main Button 1", sf::Vector2f(50, 50));
+    Button mainButton2(&normalTexture, &clickedTexture, "Main Button 2", sf::Vector2f(50, 250));
+    Button mainButton3(&normalTexture, &clickedTexture, "Main Button 3", sf::Vector2f(50, 450));
 
-    button1.setAction([&]() {
-        points.clear(); 
-        readPointsFromFile(points); 
-        buildConvexHull(convexHullPoints, points, window); 
+    sf::Texture submenuNormalTexture, submenuClickedTexture;
+    if (!submenuNormalTexture.loadFromFile("submenu_normal_button.png") || !submenuClickedTexture.loadFromFile("submenu_clicked_button.png")) {
+        std::cerr << "Failed to load submenu button textures." << std::endl;
+        return 1;
+    }
+
+    Button submenuButton1(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 1", sf::Vector2f(50, 100));
+    Button submenuButton2(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 2", sf::Vector2f(50, 150));
+    Button submenuButton3(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 3", sf::Vector2f(50, 200));
+
+    mainButton1.addButton(&submenuButton1);
+    mainButton1.addButton(&submenuButton2);
+    mainButton1.addButton(&submenuButton3);
+
+    Button submenuButton4(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 4", sf::Vector2f(50, 300));
+    Button submenuButton5(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 5", sf::Vector2f(50, 350));
+    Button submenuButton6(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 6", sf::Vector2f(50, 400));
+
+    mainButton2.addButton(&submenuButton4);
+    mainButton2.addButton(&submenuButton5);
+    mainButton2.addButton(&submenuButton6);
+
+    Button submenuButton7(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 7", sf::Vector2f(50, 500));
+    Button submenuButton8(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 8", sf::Vector2f(50, 550));
+    Button submenuButton9(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 9", sf::Vector2f(50, 600));
+
+    mainButton3.addButton(&submenuButton7);
+    mainButton3.addButton(&submenuButton8);
+    mainButton3.addButton(&submenuButton9);
+
+    submenuButton1.setAction([&]() {
+        points.clear();
+        readPointsFromFile(points);
+        buildConvexHull(convexHullPoints, points, window);
         });
 
+    submenuButton2.setAction([&window]() {
+        points.clear();
 
-    button2.setAction([&window]() {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<double> disX(200, 1450);
+        std::uniform_real_distribution<double> disY(100, 1100);
+        int numPoints = 50; // Number of random points to generate
+        for (int i = 0; i < numPoints; ++i) {
+            points.push_back({ disX(gen), disY(gen) });
+        }
+
+        buildConvexHull(convexHullPoints, points, window);
+        });
+
+    submenuButton3.setAction([&window]() {
         while (window.isOpen()) {
             sf::Event event;
             while (window.pollEvent(event)) {
@@ -256,26 +318,12 @@ int main() {
         }
         });
 
-    button3.setAction([&window]() {
-        points.clear();
-
-        // Generate random points
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<double> disX(50, 1099);
-        std::uniform_real_distribution<double> disY(50, 1099); 
-        int numPoints = 30; // Number of random points to generate
-        for (int i = 0; i < numPoints; ++i) {
-            points.push_back({ disX(gen), disY(gen) });
-        }
-
-        buildConvexHull(convexHullPoints, points, window);
-        });
 
 
-    bool button1Clicked = false;
-    bool button2Clicked = false;
-    bool button3Clicked = false;
+
+    bool submenuButton1Clicked = false;
+    bool submenuButton2Clicked = false;
+    bool submenuButton3Clicked = false;
 
     // Основний цикл програми
     while (window.isOpen()) {
@@ -284,46 +332,43 @@ int main() {
             if (event.type == sf::Event::Closed)
                 window.close();
 
-            // Обробка натискання кнопок
             if (event.type == sf::Event::MouseButtonPressed) {
                 if (event.mouseButton.button == sf::Mouse::Left) {
                     sf::Vector2f mousePos = window.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
-                    button1.checkClick(mousePos);
-                    button2.checkClick(mousePos);
-                    button3.checkClick(mousePos);
+                    mainButton1.checkClick(mousePos);
+                    mainButton2.checkClick(mousePos);
+                    mainButton3.checkClick(mousePos);
                 }
             }
         }
 
-        if (button1.getState()) {
-            points.clear(); 
-            button1Clicked = true; 
+        if (submenuButton1.getState()) {
+            points.clear();
+            submenuButton1Clicked = true;
         }
 
-        if (button2.getState()) {
-            points.clear(); 
-            button2Clicked = true; 
+        if (submenuButton2.getState()) {
+            points.clear();
+            submenuButton2Clicked = true;
         }
-        if (button3.getState()) {
-            points.clear(); 
-            button3Clicked = true; 
+        if (submenuButton3.getState()) {
+            points.clear();
+            submenuButton3Clicked = true;
         }
-        if (button1Clicked && button2Clicked && button3Clicked) {
-            button1Clicked = false;
-            button2Clicked = false;
-            button3Clicked = false;
+        if (submenuButton1Clicked && submenuButton2Clicked && submenuButton3Clicked) {
+            submenuButton1Clicked = false;
+            submenuButton2Clicked = false;
+            submenuButton3Clicked = false;
         }
 
         window.clear(sf::Color::White);
+        mainButton1.draw(window);
+        mainButton2.draw(window);
+        mainButton3.draw(window);
+    
+    
 
-        window.draw(*button1.getSprite());
-        window.draw(*button1.getText());
-        window.draw(*button2.getSprite());
-        window.draw(*button2.getText());
-        window.draw(*button3.getSprite());
-        window.draw(*button3.getText());
-        // Малювання точок та опуклої оболонки, якщо кнопки не були натиснуті
-        if (!button1Clicked || !button2Clicked||!button3Clicked) {
+        if (!submenuButton1Clicked || !submenuButton2Clicked || !submenuButton3Clicked) {
             for (const auto& point : points) {
                 sf::CircleShape circle(5);
                 circle.setFillColor(sf::Color::Blue);
