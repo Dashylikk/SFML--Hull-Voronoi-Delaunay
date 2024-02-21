@@ -34,6 +34,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="points.txt" />
+    <Text Include="a.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Button.hpp">
