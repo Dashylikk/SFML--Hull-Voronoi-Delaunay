@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <functional>
 #include <random>
+#include <vector>
+#include <cmath>
 
 struct Point {
     double x, y;
@@ -48,6 +50,11 @@ std::vector<Point> convexHull(std::vector<Point>& points) {
     lowerHull.insert(lowerHull.end(), upperHull.begin(), upperHull.end());
 
     return lowerHull;
+}
+float squaredDistance(sf::Vector2f p1, sf::Vector2f p2) {
+    float dx = p2.x - p1.x;
+    float dy = p2.y - p1.y;
+    return dx * dx + dy * dy;
 }
 
 class Button {
@@ -203,12 +210,75 @@ void readPointsFromFile(std::vector<Point>& points) {
     }
     inputFile.close();
 }
+void readPointsVoron(const std::string& filename, std::vector<sf::Vector2f>& points) {
+    std::ifstream inputFile("points.txt");
+    if (!inputFile.is_open()) {
+        std::cerr << "Failed to open file: "  << std::endl;
+        return;
+    }
+
+    float x, y;
+    while (inputFile >> x >> y) {
+        points.emplace_back(x, y);
+    }
+
+    inputFile.close();
+}
+void generateRandomPointsAndColors(int numPoints, int width, int height, std::vector<sf::Vector2f>& points, std::vector<sf::Color>& colors) {
+    points.clear();
+    colors.clear();
+
+    for (int i = 0; i < numPoints; ++i) {
+        points.push_back(sf::Vector2f(std::rand() % width, std::rand() % height));
+        colors.push_back(sf::Color(std::rand() % 255, std::rand() % 255, std::rand() % 255));
+    }
+}
+
+// Function to draw the Voronoi diagram
+void drawVoronoiDiagram(sf::RenderWindow& window, int width, int height, const std::vector<sf::Vector2f>& points, const std::vector<sf::Color>& colors) {
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int closestIndex = 0;
+            float minDist = squaredDistance(points[0], sf::Vector2f(x, y));
+
+            // Find the closest point
+            for (size_t i = 1; i < points.size(); ++i) {
+                float dist = squaredDistance(points[i], sf::Vector2f(x, y));
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestIndex = i;
+                }
+            }
+
+            // Draw the pixel with the color of the closest point
+            sf::RectangleShape pixel(sf::Vector2f(1, 1));
+            pixel.setPosition(x, y);
+            pixel.setFillColor(colors[closestIndex]);
+            window.draw(pixel);
+        }
+    }
+}
+
+// Function to draw the points
+void drawPoints(sf::RenderWindow& window, const std::vector<sf::Vector2f>& points) {
+    for (size_t i = 0; i < points.size(); ++i) {
+        sf::CircleShape circle(3);
+        circle.setPosition(points[i]);
+        circle.setFillColor(sf::Color::Black);
+        window.draw(circle);
+    }
+}
+
 
 std::vector<Point> points;
-std::vector<Point> convexHullPoints; 
+std::vector<Point> convexHullPoints;
+
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(2000, 1200), "Lab-1");
+    const int width = 2000;
+    const int height = 1200;
+    const int numPoints = 20;
+    sf::RenderWindow window(sf::VideoMode(width, height), "Lab-1");
 
     sf::Texture normalTexture, clickedTexture;
     if (!normalTexture.loadFromFile("normal_button.png") || !clickedTexture.loadFromFile("clicked_button.png")) {
@@ -258,12 +328,10 @@ int main() {
 
     submenuButton2.setAction([&window]() {
         points.clear();
-
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_real_distribution<double> disX(200, 1450);
         std::uniform_real_distribution<double> disY(100, 1100);
-        int numPoints = 50; // Number of random points to generate
         for (int i = 0; i < numPoints; ++i) {
             points.push_back({ disX(gen), disY(gen) });
         }
@@ -317,13 +385,57 @@ int main() {
             window.display();
         }
         });
+    submenuButton4.setAction([&]() {
+        std::vector<sf::Vector2f> points;
+        std::vector<sf::Color> colors;
+        points.clear();
+        readPointsVoron("points.txt", points);
+        for (size_t i = 0; i < points.size(); ++i) {
+            colors.emplace_back(std::rand() % 255, std::rand() % 255, std::rand() % 255);
+        }
+        while (window.isOpen()) {
+            sf::Event event;
+            while (window.pollEvent(event)) {
+                if (event.type == sf::Event::Closed)
+                    window.close();
+            }
+            window.clear(sf::Color::White);
+            drawVoronoiDiagram(window, width, height, points, colors);
+            drawPoints(window, points);
+            window.display();
+        }
+        });
 
+    submenuButton5.setAction([&]() {
+        std::vector<sf::Vector2f> points;
+        std::vector<sf::Color> colors;
 
+        generateRandomPointsAndColors(numPoints, width, height, points, colors);
+
+        while (window.isOpen()) {
+            sf::Event event;
+            while (window.pollEvent(event)) {
+                if (event.type == sf::Event::Closed)
+                    window.close();
+            }
+
+            window.clear(sf::Color::White);
+
+            drawVoronoiDiagram(window, width, height, points, colors);
+            drawPoints(window, points);
+
+            window.display();
+        }
+        });
+
+    
 
 
     bool submenuButton1Clicked = false;
     bool submenuButton2Clicked = false;
     bool submenuButton3Clicked = false;
+    bool submenuButton4Clicked = false;
+    bool submenuButton5Clicked = false;
 
     // Основний цикл програми
     while (window.isOpen()) {
@@ -355,20 +467,30 @@ int main() {
             points.clear();
             submenuButton3Clicked = true;
         }
-        if (submenuButton1Clicked && submenuButton2Clicked && submenuButton3Clicked) {
+        if (submenuButton4.getState()) {
+            points.clear();
+            submenuButton4Clicked = true;
+        }
+        if (submenuButton5.getState()) {
+            points.clear();
+            submenuButton5Clicked = true;
+        }
+        if (submenuButton1Clicked && submenuButton2Clicked && submenuButton3Clicked && submenuButton4Clicked && submenuButton5Clicked) {
             submenuButton1Clicked = false;
             submenuButton2Clicked = false;
             submenuButton3Clicked = false;
+            submenuButton4Clicked = false;
+            submenuButton5Clicked = false;
         }
 
         window.clear(sf::Color::White);
         mainButton1.draw(window);
         mainButton2.draw(window);
         mainButton3.draw(window);
-    
-    
 
-        if (!submenuButton1Clicked || !submenuButton2Clicked || !submenuButton3Clicked) {
+
+
+        if (!submenuButton1Clicked || !submenuButton2Clicked || !submenuButton3Clicked || !submenuButton4Clicked || !submenuButton5Clicked) {
             for (const auto& point : points) {
                 sf::CircleShape circle(5);
                 circle.setFillColor(sf::Color::Blue);
