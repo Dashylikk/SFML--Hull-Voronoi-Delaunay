@@ -213,7 +213,7 @@ void readPointsFromFile(std::vector<Point>& points) {
 void readPointsVoron(const std::string& filename, std::vector<sf::Vector2f>& points) {
     std::ifstream inputFile("points.txt");
     if (!inputFile.is_open()) {
-        std::cerr << "Failed to open file: "  << std::endl;
+        std::cerr << "Failed to open file: " << std::endl;
         return;
     }
 
@@ -234,14 +234,12 @@ void generateRandomPointsAndColors(int numPoints, int width, int height, std::ve
     }
 }
 
-// Function to draw the Voronoi diagram
 void drawVoronoiDiagram(sf::RenderWindow& window, int width, int height, const std::vector<sf::Vector2f>& points, const std::vector<sf::Color>& colors) {
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             int closestIndex = 0;
             float minDist = squaredDistance(points[0], sf::Vector2f(x, y));
 
-            // Find the closest point
             for (size_t i = 1; i < points.size(); ++i) {
                 float dist = squaredDistance(points[i], sf::Vector2f(x, y));
                 if (dist < minDist) {
@@ -250,7 +248,6 @@ void drawVoronoiDiagram(sf::RenderWindow& window, int width, int height, const s
                 }
             }
 
-            // Draw the pixel with the color of the closest point
             sf::RectangleShape pixel(sf::Vector2f(1, 1));
             pixel.setPosition(x, y);
             pixel.setFillColor(colors[closestIndex]);
@@ -259,7 +256,6 @@ void drawVoronoiDiagram(sf::RenderWindow& window, int width, int height, const s
     }
 }
 
-// Function to draw the points
 void drawPoints(sf::RenderWindow& window, const std::vector<sf::Vector2f>& points) {
     for (size_t i = 0; i < points.size(); ++i) {
         sf::CircleShape circle(3);
@@ -268,7 +264,48 @@ void drawPoints(sf::RenderWindow& window, const std::vector<sf::Vector2f>& point
         window.draw(circle);
     }
 }
+void calculateVoronoiDiagram3(const std::vector<Point>& points, std::vector<std::vector<Point>>& voronoiDiagram, int width, int height) {
+    voronoiDiagram.clear();
+    voronoiDiagram.resize(points.size());
 
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            float minDist = std::numeric_limits<float>::max();
+            int closestIndex = -1;
+
+            for (size_t i = 0; i < points.size(); ++i) {
+                sf::Vector2f currentPixel(static_cast<float>(x), static_cast<float>(y));
+                sf::Vector2f currentPoint(points[i].x, points[i].y);
+
+                float dist = squaredDistance(currentPoint, currentPixel);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestIndex = i;
+                }
+            }
+
+            voronoiDiagram[closestIndex].push_back({ static_cast<float>(x), static_cast<float>(y) });
+        }
+    }
+}
+void drawVoronoiDiagram3(sf::RenderWindow& window, const std::vector<std::vector<Point>>& voronoiDiagram, const std::vector<sf::Color>& colors) {
+    for (size_t i = 0; i < voronoiDiagram.size(); ++i) {
+        for (const auto& point : voronoiDiagram[i]) {
+            sf::RectangleShape pixel(sf::Vector2f(1, 1));
+            pixel.setPosition(point.x, point.y);
+            pixel.setFillColor(colors[i]);
+            window.draw(pixel);
+        }
+    }
+}
+void drawPoints3(sf::RenderWindow& window, const std::vector<Point>& points) {
+    for (const auto& point : points) {
+        sf::CircleShape circle(3);
+        circle.setPosition(point.x, point.y);
+        circle.setFillColor(sf::Color::Black);
+        window.draw(circle);
+    }
+}
 
 std::vector<Point> points;
 std::vector<Point> convexHullPoints;
@@ -355,7 +392,6 @@ int main() {
 
             window.clear(sf::Color::White);
 
-            // Display points
             for (const auto& point : points) {
                 sf::CircleShape circle(5);
                 circle.setFillColor(sf::Color::Blue);
@@ -363,7 +399,6 @@ int main() {
                 window.draw(circle);
             }
 
-            // Build convex hull
             if (points.size() >= 3) {
                 std::vector<Point> convexHullPoints = convexHull(points);
                 for (std::size_t i = 1; i < convexHullPoints.size(); ++i) {
@@ -428,7 +463,39 @@ int main() {
         }
         });
 
-    
+    submenuButton6.setAction([&]() {
+        std::vector<Point> points;
+        std::vector<sf::Color> colors;
+        std::vector<std::vector<Point>> voronoiDiagram3;
+
+        while (window.isOpen()) {
+            sf::Event event;
+            while (window.pollEvent(event)) {
+                if (event.type == sf::Event::Closed)
+                    window.close();
+
+                if (event.type == sf::Event::MouseButtonPressed) {
+                    if (event.mouseButton.button == sf::Mouse::Left) {
+                        points.push_back({ static_cast<float>(event.mouseButton.x), static_cast<float>(event.mouseButton.y) });
+
+                        sf::Color color(std::rand() % 255, std::rand() % 255, std::rand() % 255);
+                        colors.push_back(color);
+
+                        voronoiDiagram3.resize(points.size());
+
+                        calculateVoronoiDiagram3(points, voronoiDiagram3, width, height);
+                    }
+                }
+            }
+
+            window.clear(sf::Color::White);
+
+            drawVoronoiDiagram3(window, voronoiDiagram3, colors);
+            drawPoints3(window, points);
+
+            window.display();
+        }
+        });
 
 
     bool submenuButton1Clicked = false;
@@ -436,6 +503,7 @@ int main() {
     bool submenuButton3Clicked = false;
     bool submenuButton4Clicked = false;
     bool submenuButton5Clicked = false;
+    bool submenuButton6Clicked = false;
 
     // Основний цикл програми
     while (window.isOpen()) {
@@ -475,12 +543,17 @@ int main() {
             points.clear();
             submenuButton5Clicked = true;
         }
-        if (submenuButton1Clicked && submenuButton2Clicked && submenuButton3Clicked && submenuButton4Clicked && submenuButton5Clicked) {
+        if (submenuButton6.getState()) {
+            points.clear();
+            submenuButton6Clicked = true;
+        }
+        if (submenuButton1Clicked && submenuButton2Clicked && submenuButton3Clicked && submenuButton4Clicked && submenuButton5Clicked && submenuButton6Clicked) {
             submenuButton1Clicked = false;
             submenuButton2Clicked = false;
             submenuButton3Clicked = false;
             submenuButton4Clicked = false;
             submenuButton5Clicked = false;
+            submenuButton6Clicked = false;
         }
 
         window.clear(sf::Color::White);
@@ -490,7 +563,7 @@ int main() {
 
 
 
-        if (!submenuButton1Clicked || !submenuButton2Clicked || !submenuButton3Clicked || !submenuButton4Clicked || !submenuButton5Clicked) {
+        if (!submenuButton1Clicked || !submenuButton2Clicked || !submenuButton3Clicked || !submenuButton4Clicked || !submenuButton5Clicked || !submenuButton6Clicked) {
             for (const auto& point : points) {
                 sf::CircleShape circle(5);
                 circle.setFillColor(sf::Color::Blue);
