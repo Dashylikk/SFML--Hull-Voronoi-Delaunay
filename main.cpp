@@ -168,32 +168,31 @@ void Button::closeSubmenu() {
     }
 }
 
-void buildConvexHull(std::vector<Point>& convexHullPoints, std::vector<Point>& points, sf::RenderWindow& window) {
-    convexHullPoints = convexHull(points);
-
-    window.clear();
-
+void drawPointsHull(const std::vector<Point>& points, sf::RenderWindow& window) {
     for (const auto& point : points) {
         sf::CircleShape circle(5);
         circle.setFillColor(sf::Color::Blue);
         circle.setPosition(point.x, point.y);
         window.draw(circle);
     }
+}
 
+void drawConvexHull(const std::vector<Point>& convexHullPoints, sf::RenderWindow& window) {
     for (std::size_t i = 1; i < convexHullPoints.size(); ++i) {
         sf::Vertex line[] = {
             sf::Vertex(sf::Vector2f(convexHullPoints[i - 1].x, convexHullPoints[i - 1].y), sf::Color::Red),
             sf::Vertex(sf::Vector2f(convexHullPoints[i].x, convexHullPoints[i].y), sf::Color::Red)
         };
+        window.draw(line, 2, sf::Lines);
+    }
+    if (!convexHullPoints.empty()) {
         sf::Vertex lastLine[] = {
             sf::Vertex(sf::Vector2f(convexHullPoints.back().x, convexHullPoints.back().y), sf::Color::Red),
             sf::Vertex(sf::Vector2f(convexHullPoints.front().x, convexHullPoints.front().y), sf::Color::Red)
         };
-        window.draw(line, 2, sf::Lines);
+
         window.draw(lastLine, 2, sf::Lines);
     }
-
-    window.display();
 }
 void readPointsFromFile(std::vector<Point>& points) {
     double x, y;
@@ -553,7 +552,7 @@ int main() {
     Button mainButton3(&normalTexture, &clickedTexture, "Main Button 3", sf::Vector2f(50, 450));
 
     sf::Texture submenuNormalTexture, submenuClickedTexture;
-    if (!submenuNormalTexture.loadFromFile("submenu_normal_button.png") || !submenuClickedTexture.loadFromFile("submenu_clicked_button.png")) {
+    if (!submenuNormalTexture.loadFromFile("submenu_normal_button.png") || !submenuClickedTexture.loadFromFile("submenu_normal_button.png")) {
         std::cerr << "Failed to load submenu button textures." << std::endl;
         return 1;
     }
@@ -583,15 +582,31 @@ int main() {
     mainButton3.addButton(&submenuButton9);
 
     submenuButton1.setAction([&]() {
-        sf::RenderWindow window(sf::VideoMode(width, height), "Ñonvex Hull(clicking)");
+        sf::RenderWindow window(sf::VideoMode(width, height), "Convex Hull(txt)");
         points.clear();
-        readPointsFromFile(points);
-        buildConvexHull(convexHullPoints, points, window);
+
+        while (window.isOpen()) {
+            sf::Event event;
+            while (window.pollEvent(event)) {
+                if (event.type == sf::Event::Closed)
+                    window.close();
+            }
+
+            window.clear(sf::Color::White);
+            readPointsFromFile(points);
+            drawPointsHull(points, window);
+            if (points.size() >= 3) {
+                std::vector<Point> convexHullPoints = convexHull(points);
+                drawConvexHull(convexHullPoints, window);
+            }
+
+            window.display();
+        }
         });
 
     submenuButton2.setAction([&window]() {
-        sf::RenderWindow window(sf::VideoMode(width, height), "Ñonvex Hull(clicking)");
-        points.clear();
+        sf::RenderWindow window(sf::VideoMode(width, height), "Convex Hull(random)");
+        std::vector<Point> points;
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_real_distribution<double> disX(200, 1450);
@@ -600,12 +615,30 @@ int main() {
             points.push_back({ disX(gen), disY(gen) });
         }
 
-        buildConvexHull(convexHullPoints, points, window);
+        while (window.isOpen()) {
+            sf::Event event;
+            while (window.pollEvent(event)) {
+                if (event.type == sf::Event::Closed)
+                    window.close();
+            }
+
+            window.clear(sf::Color::White);
+            drawPointsHull(points, window);
+
+            if (points.size() >= 3) {
+                std::vector<Point> convexHullPoints = convexHull(points);
+
+                drawConvexHull(convexHullPoints, window);
+            }
+
+            window.display();
+        }
         });
 
-    submenuButton3.setAction([&window]() {
 
-        sf::RenderWindow window(sf::VideoMode(width, height), "Ñonvex Hull(clicking)");
+    submenuButton3.setAction([&window]() {
+        sf::RenderWindow window(sf::VideoMode(width, height), "Convex Hull(clicking)");
+        std::vector<Point> points;
         while (window.isOpen()) {
             sf::Event event;
             while (window.pollEvent(event)) {
@@ -620,35 +653,16 @@ int main() {
             }
 
             window.clear(sf::Color::White);
-
-            for (const auto& point : points) {
-                sf::CircleShape circle(5);
-                circle.setFillColor(sf::Color::Blue);
-                circle.setPosition(point.x, point.y);
-                window.draw(circle);
-            }
-
+            drawPointsHull(points, window);
             if (points.size() >= 3) {
                 std::vector<Point> convexHullPoints = convexHull(points);
-                for (std::size_t i = 1; i < convexHullPoints.size(); ++i) {
-                    sf::Vertex line[] = {
-                        sf::Vertex(sf::Vector2f(convexHullPoints[i - 1].x, convexHullPoints[i - 1].y), sf::Color::Red),
-                        sf::Vertex(sf::Vector2f(convexHullPoints[i].x, convexHullPoints[i].y), sf::Color::Red)
-                    };
-                    window.draw(line, 2, sf::Lines);
-                }
-                if (!convexHullPoints.empty()) {
-                    sf::Vertex lastLine[] = {
-                        sf::Vertex(sf::Vector2f(convexHullPoints.back().x, convexHullPoints.back().y), sf::Color::Red),
-                        sf::Vertex(sf::Vector2f(convexHullPoints.front().x, convexHullPoints.front().y), sf::Color::Red)
-                    };
-                    window.draw(lastLine, 2, sf::Lines);
-                }
+                drawConvexHull(convexHullPoints, window);
             }
 
             window.display();
         }
         });
+
     submenuButton4.setAction([&]() {
 
         sf::RenderWindow window(sf::VideoMode(width, height), "Voronoi Diagram(txt)");
@@ -835,14 +849,7 @@ int main() {
             window.display();
         }
         });
-    bool submenuButton1Clicked = false;
-    bool submenuButton2Clicked = false;
-    bool submenuButton3Clicked = false;
-    bool submenuButton4Clicked = false;
-    bool submenuButton5Clicked = false;
-    bool submenuButton6Clicked = false;
 
-    // Îñíîâíèé öèêë ïðîãðàìè
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -859,77 +866,13 @@ int main() {
             }
         }
 
-        if (submenuButton1.getState()) {
-            points.clear();
-            submenuButton1Clicked = true;
-        }
-
-        if (submenuButton2.getState()) {
-            points.clear();
-            submenuButton2Clicked = true;
-        }
-        if (submenuButton3.getState()) {
-            points.clear();
-            submenuButton3Clicked = true;
-        }
-        if (submenuButton4.getState()) {
-            points.clear();
-            submenuButton4Clicked = true;
-        }
-        if (submenuButton5.getState()) {
-            points.clear();
-            submenuButton5Clicked = true;
-        }
-        if (submenuButton6.getState()) {
-            points.clear();
-            submenuButton6Clicked = true;
-        }
-        if (submenuButton1Clicked && submenuButton2Clicked && submenuButton3Clicked && submenuButton4Clicked && submenuButton5Clicked && submenuButton6Clicked) {
-            submenuButton1Clicked = false;
-            submenuButton2Clicked = false;
-            submenuButton3Clicked = false;
-            submenuButton4Clicked = false;
-            submenuButton5Clicked = false;
-            submenuButton6Clicked = false;
-        }
+      
 
         window.clear(sf::Color::White);
         mainButton1.draw(window);
         mainButton2.draw(window);
         mainButton3.draw(window);
-
-
-
-        if (!submenuButton1Clicked || !submenuButton2Clicked || !submenuButton3Clicked || !submenuButton4Clicked || !submenuButton5Clicked || !submenuButton6Clicked) {
-            for (const auto& point : points) {
-                sf::CircleShape circle(5);
-                circle.setFillColor(sf::Color::Blue);
-                circle.setPosition(point.x, point.y);
-                window.draw(circle);
-            }
-
-            if (points.size() >= 3) {
-                std::vector<Point> convexHullPoints = convexHull(points);
-                for (std::size_t i = 1; i < convexHullPoints.size(); ++i) {
-                    sf::Vertex line[] = {
-                        sf::Vertex(sf::Vector2f(convexHullPoints[i - 1].x, convexHullPoints[i - 1].y), sf::Color::Red),
-                        sf::Vertex(sf::Vector2f(convexHullPoints[i].x, convexHullPoints[i].y), sf::Color::Red)
-                    };
-                    window.draw(line, 2, sf::Lines);
-                }
-                if (!convexHullPoints.empty()) {
-                    sf::Vertex lastLine[] = {
-                        sf::Vertex(sf::Vector2f(convexHullPoints.back().x, convexHullPoints.back().y), sf::Color::Red),
-                        sf::Vertex(sf::Vector2f(convexHullPoints.front().x, convexHullPoints.front().y), sf::Color::Red)
-                    };
-                    window.draw(lastLine, 2, sf::Lines);
-                }
-            }
-        }
-
         window.display();
     }
-
-
     return 0;
 }
