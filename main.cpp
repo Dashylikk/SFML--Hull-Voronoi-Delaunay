@@ -96,7 +96,7 @@ Button::Button(sf::Texture* normal, sf::Texture* clicked, std::string text, sf::
     normalSprite.setPosition(location);
     clickedSprite.setPosition(location);
 
-    sf::Vector2f newSize(100, 40);
+    sf::Vector2f newSize(200, 80);
     normalSprite.setScale(newSize.x / normalSprite.getLocalBounds().width, newSize.y / normalSprite.getLocalBounds().height);
     clickedSprite.setScale(newSize.x / clickedSprite.getLocalBounds().width, newSize.y / clickedSprite.getLocalBounds().height);
 
@@ -547,9 +547,9 @@ int main() {
         return 1;
     }
 
-    Button mainButton1(&normalTexture, &clickedTexture, "Main Button 1", sf::Vector2f(50, 50));
-    Button mainButton2(&normalTexture, &clickedTexture, "Main Button 2", sf::Vector2f(50, 250));
-    Button mainButton3(&normalTexture, &clickedTexture, "Main Button 3", sf::Vector2f(50, 450));
+    Button mainButton1(&normalTexture, &clickedTexture, "Main Button 1", sf::Vector2f(400, 400));
+    Button mainButton2(&normalTexture, &clickedTexture, "Main Button 2", sf::Vector2f(950, 400));
+    Button mainButton3(&normalTexture, &clickedTexture, "Main Button 3", sf::Vector2f(1500, 400));
 
     sf::Texture submenuNormalTexture, submenuClickedTexture;
     if (!submenuNormalTexture.loadFromFile("submenu_normal_button.png") || !submenuClickedTexture.loadFromFile("submenu_normal_button.png")) {
@@ -557,25 +557,25 @@ int main() {
         return 1;
     }
 
-    Button submenuButton1(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 1", sf::Vector2f(50, 100));
-    Button submenuButton2(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 2", sf::Vector2f(50, 150));
-    Button submenuButton3(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 3", sf::Vector2f(50, 200));
+    Button submenuButton1(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 1", sf::Vector2f(400, 500));
+    Button submenuButton2(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 2", sf::Vector2f(400, 600));
+    Button submenuButton3(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 3", sf::Vector2f(400, 700));
 
     mainButton1.addButton(&submenuButton1);
     mainButton1.addButton(&submenuButton2);
     mainButton1.addButton(&submenuButton3);
 
-    Button submenuButton4(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 4", sf::Vector2f(50, 300));
-    Button submenuButton5(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 5", sf::Vector2f(50, 350));
-    Button submenuButton6(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 6", sf::Vector2f(50, 400));
+    Button submenuButton4(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 4", sf::Vector2f(950, 500));
+    Button submenuButton5(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 5", sf::Vector2f(950, 600));
+    Button submenuButton6(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 6", sf::Vector2f(950, 700));
 
     mainButton2.addButton(&submenuButton4);
     mainButton2.addButton(&submenuButton5);
     mainButton2.addButton(&submenuButton6);
 
-    Button submenuButton7(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 7", sf::Vector2f(50, 500));
-    Button submenuButton8(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 8", sf::Vector2f(50, 550));
-    Button submenuButton9(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 9", sf::Vector2f(50, 600));
+    Button submenuButton7(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 7", sf::Vector2f(1500, 500));
+    Button submenuButton8(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 8", sf::Vector2f(1500, 600));
+    Button submenuButton9(&submenuNormalTexture, &submenuClickedTexture, "Submenu Button 9", sf::Vector2f(1500, 700));
 
     mainButton3.addButton(&submenuButton7);
     mainButton3.addButton(&submenuButton8);
@@ -866,7 +866,7 @@ int main() {
             }
         }
 
-      
+
 
         window.clear(sf::Color::White);
         mainButton1.draw(window);
